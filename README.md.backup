@@ -14,7 +14,7 @@ Clokkky is a standard clock generator with three integrated 8 steps gate sequenc
 
 - The number of steps of each track can be changed using the three central knobs (values from 0 to 8).
 
-- In the default *mode* **3x8** the three tracks are independent, but you can also join them and get a 24 steps sequence using the **1x24** mode. In this mode only output **T1** is active.
+- In the default *mode* **3x8** the three tracks are independent, but you can also join them and get a 24 steps sequence using the **1x24** mode. In this mode only output $
 
 - The **RST** button (or the associated input) can be used to restart the sequencer
 

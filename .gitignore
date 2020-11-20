@@ -1,0 +1,11 @@
+/build
+/dist
+/plugin.so
+/plugin.dylib
+/plugin.dll
+.DS_Store
+/tmp
+/nbproject
+/res/*_text.svg
+/workinprogress.md
+/publish.bat

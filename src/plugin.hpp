@@ -11,3 +11,4 @@ extern Plugin* pluginInstance;
 extern Model* modelClockkky;
 extern Model* modelPlanetz;
 extern Model* modelMusiFrog;
+extern Model* modelZefiro;

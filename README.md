@@ -1,10 +1,13 @@
 # AlgoritmarteVCVPlugin
 Algoritmarte VCV Rack Modules
 
-- [Clockkky](#clockkky)
-- [Planetz](#planetz)
-- [MusiFrog](#musifrog)
-- [Zefiro](#zefiro)
+- [Clockkky](#clockkky) : clock/trigger sequencer
+- [Planetz](#planetz) : random sequence generator
+- [MusiFrog](#musifrog) : another musical sequence generator
+- [Zefiro](#zefiro) : full synth inspired by the Buchla Music Easel
+- [HoldMeTight](#holdmetight) : triple sample&hold and quantizer
+
+Click here for [version history](#history).
 
 If you find these modules useful, [please support me](https://www.algoritmarte.com/support-algoritmarte/).
 
@@ -37,6 +40,8 @@ You can select two planets (using the two bottom left knobs) and send their coor
 Using the **SCALE XY** knobs the output values can be scaled.
 
 The **RST** input and button can be used to restart the sequence (to use it in a deterministic way).
+
+The two **Mirror** switches can be used to force the output to be the absolute (positive) of the X and/or Y coordinates.
 
 Interesting **generative* results can be achieved connecting one of the four coordinates (or a combination of them) to one or more oscillators (to the  1V/octave input but also to the FM input) or to one or more quantizers in which similar scales are selected.
 
@@ -220,3 +225,25 @@ Finally the signal reaches the **OUT output** (with the gain controlled by the *
 There is also an **INVERTER input/output** that can be used to invert one of the signals to obtain weird effects.
 
 ![zefiro_output](doc/zefiro_output.png)
+
+## <a name="holdmetight"></a>HoldMeTight
+
+The *HoldMeTight* module is a triple sample&hold and quantizer module. Each one of the three sub-modules behaves in the same manner: when the **HOLD** input is triggered, the current value of the **IN** input is sampled and maintained on the **OUT** output.
+If the **Quantize switch** is selected, the input value is quantized to a note (1V/oct) among the ones selected in the **SCALE** section (which contains the twelve notes C,C#,D,D#,...). The conversion between the current input and the notes of the scale can be made in three different modes:
+
+- **Prop** (Proportional) : the 1Volt range is mapped to the current selected notes, and the note is selected in a proportional way. For example, if the input is 0.3V and the scale contains C,D,E then the notes are spread in the interval (0,1): C=0, D=0.33, E=0.66 and the note selected is D;
+- **Nearest** : the note selected is the nearest of the current input voltage; for example if the input is 0.4V and the scale contains C,E,G ; the note selected is the E.
+- **Clamp** : the note selected is the one that is distant less than 0.5/12 Volt from the current input; if no notes of the scale is active in that range, the previous value doesn't change. For example, if the scale is C,E,G and the input is 0.33V (~E) then the E is selected; then if the hold is triggered again when the input is 0.41 (~F), the E is mantained (no changes).
+ 
+There is also a gate output **NEQ** which is triggered (hi/lo/hi) only when the sampled value (quantized if quantization is enabled) changes; it can be used to trigger an envelope only when the note changes.
+
+When there is no connection on the input a random voltage **between 0V and 1V** is generated (the value is quantized if the corresponding switch is active); it can be used to generate a random note from the scale. 
+ 
+![HoldMeTight](thumbHoldMeTight.png)
+
+# <a name="history"></a>History
+
+## v1.4.0
+- added the *HoldMeTight* module
+- *Planetz*: added two switches to output the absolute values of the X/Y coordinates
+- *Zefiro*: changed the pitch modulation of the modulator oscillator and main oscillator in order to follow the 1V/oct standard (a modulation of +1V causes a double of the frequency of the modulator/oscillator) 

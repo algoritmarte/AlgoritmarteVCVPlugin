@@ -64,6 +64,8 @@ struct Planetz : Module {
 		SCALEY_PARAM,
 		SELP1_PARAM,
 		SELP2_PARAM,
+		MIRRORX_PARAM,
+		MIRRORY_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -78,11 +80,18 @@ struct Planetz : Module {
 		NUM_OUTPUTS
 	};
 	enum LightIds {
+		MIRRORX_LIGHT,
+		MIRRORY_LIGHT,
 		NUM_LIGHTS
 	};
         
         dsp::SchmittTrigger dbgTrigger;
         dsp::SchmittTrigger rstTrigger;
+        dsp::SchmittTrigger mirrorXTrigger;
+        dsp::SchmittTrigger mirrorYTrigger;
+        
+        bool fMirrorX = false;
+        bool fMirrorY = false;        
         
         TPlanet planets[MAXPLANETS] = {};
         int numplanets = 6; // 6 including the central "star"
@@ -172,6 +181,9 @@ struct Planetz : Module {
 #ifdef USEDBG                
 		configParam(DBG_PARAM, 0.f, 1.f, 0.f, "Debug");
 #endif                
+		configParam(MIRRORX_PARAM, 0.f, 1.f, 0.f, "Mirror X (output absolute value)");
+		configParam(MIRRORY_PARAM, 0.f, 1.f, 0.f, " Mirror Y (output absolute value)");
+
 		configParam(P1ALPHA_PARAM, MINALPHA, MAXALPHA, 0.f, "Planet 1 angle");
 		configParam(P1RAY_PARAM, MINRAY, MAXRAY, 16.f, "Planet 1 ray");
 		configParam(P1SPEED_PARAM, MINSPEED, MAXSPEED, 10.f, "Planet 1 speed");
@@ -208,6 +220,16 @@ struct Planetz : Module {
 	void process(const ProcessArgs& args) override {
                       
             animevery = (int)(1.0 * args.sampleRate / 100);
+
+            if (mirrorXTrigger.process(params[MIRRORX_PARAM].getValue() )) {
+                fMirrorX = ! fMirrorX;
+            }
+            lights[ MIRRORX_LIGHT ].setBrightness( fMirrorX );
+            
+            if (mirrorYTrigger.process(params[MIRRORY_PARAM].getValue() )) {
+                fMirrorY = ! fMirrorY;
+            }
+            lights[ MIRRORY_LIGHT ].setBrightness( fMirrorY );
             
             if (rstTrigger.process(params[RST_PARAM].getValue() + inputs[RST_INPUT].getVoltage() )) {
                 rst();
@@ -231,10 +253,10 @@ struct Planetz : Module {
             scalex = params[ SCALEX_PARAM ].getValue();
             scaley = params[ SCALEY_PARAM ].getValue();
             
-            outputs[ OUTP1X_OUTPUT ].setVoltage( scalex * planets[p1].cx / 10.0 );
-            outputs[ OUTP1Y_OUTPUT ].setVoltage( scaley * planets[p1].cy / 10.0 );
-            outputs[ OUTP2X_OUTPUT ].setVoltage( scalex * planets[p2].cx / 10.0 );
-            outputs[ OUTP2Y_OUTPUT ].setVoltage( scaley * planets[p2].cy / 10.0 );
+            outputs[ OUTP1X_OUTPUT ].setVoltage( applyParams( scalex * planets[p1].cx / 10.0, true ) );
+            outputs[ OUTP1Y_OUTPUT ].setVoltage( applyParams( scaley * planets[p1].cy / 10.0, false ) );
+            outputs[ OUTP2X_OUTPUT ].setVoltage( applyParams( scalex * planets[p2].cx / 10.0, true ) );
+            outputs[ OUTP2Y_OUTPUT ].setVoltage( applyParams( scaley * planets[p2].cy / 10.0, false ) );
 #ifdef USEDBG            
             // Dbg
             if (dbgTrigger.process(params[DBG_PARAM].getValue())) {
@@ -242,6 +264,44 @@ struct Planetz : Module {
             }
 #endif            
 	}
+
+    float applyParams(float v, bool xaxis ) {
+        if ( xaxis && fMirrorX ) v = abs(v);
+        if ( !xaxis && fMirrorY ) v = abs(v);
+        return v;
+    }   
+    
+    
+    
+    
+    
+    /**
+     * Save data
+     * @return 
+     */
+    json_t* dataToJson() override {
+        json_t* rootJ = json_object();
+
+        json_object_set_new(rootJ, "mirrorx", json_boolean( fMirrorX ) );
+        json_object_set_new(rootJ, "mirrory", json_boolean( fMirrorY ) );
+        
+        return rootJ;
+    }
+
+    /**
+     * Load data
+     * @param rootJ
+     */
+    void dataFromJson(json_t* rootJ) override {
+        json_t* mirrorxJ = json_object_get(rootJ, "mirrorx");
+        if (mirrorxJ)
+            fMirrorX = json_is_true(mirrorxJ);
+        json_t* mirroryJ = json_object_get(rootJ, "mirrory");
+        if (mirroryJ)
+            fMirrorY = json_is_true(mirroryJ);
+    }
+    
+     
 
 };
 
@@ -258,6 +318,9 @@ struct PlanetzWidget : ModuleWidget {
 #ifdef USEDBG
 		addParam(createParamCentered<LEDButton>(mm2px(Vec(17.908, 7.728)), module, Planetz::DBG_PARAM));
 #endif
+		addParam(createParamCentered<LEDButton>(mm2px(Vec(19.0, 23.0)), module, Planetz::MIRRORX_PARAM));
+		addParam(createParamCentered<LEDButton>(mm2px(Vec(32.0, 23.0)), module, Planetz::MIRRORY_PARAM));
+
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(14.0, 32.0)), module, Planetz::P1ALPHA_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(1.0, 32.0)), module, Planetz::P1RAY_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(27.0, 32.0)), module, Planetz::P1SPEED_PARAM));
@@ -273,18 +336,21 @@ struct PlanetzWidget : ModuleWidget {
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(14.0, 80.0)), module, Planetz::P5ALPHA_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(1.0, 80.0)), module, Planetz::P5RAY_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(27.0, 80.0)), module, Planetz::P5SPEED_PARAM));
-		addParam(createParamCentered<LEDButton>(mm2px(Vec(6.0, 22.0)), module, Planetz::RST_PARAM));
-		addParam(createParam<RoundBlackKnob>(mm2px(Vec(14.0, 7.0)), module, Planetz::SCALEX_PARAM));
-		addParam(createParam<RoundBlackKnob>(mm2px(Vec(27.0, 7.0)), module, Planetz::SCALEY_PARAM));
+		addParam(createParamCentered<LEDButton>(mm2px(Vec(6.0, 23.0)), module, Planetz::RST_PARAM));
+		addParam(createParam<RoundBlackKnob>(mm2px(Vec(14.0, 5.942)), module, Planetz::SCALEX_PARAM));
+		addParam(createParam<RoundBlackKnob>(mm2px(Vec(27.0, 5.942)), module, Planetz::SCALEY_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(1.0, 93.879)), module, Planetz::SELP1_PARAM));
 		addParam(createParam<RoundBlackSnapKnob>(mm2px(Vec(1.0, 109.35)), module, Planetz::SELP2_PARAM));
 
-		addInput(createInput<PJ301MPort>(mm2px(Vec(2.0, 8.0)), module, Planetz::RST_INPUT));
+		addInput(createInput<PJ301MPort>(mm2px(Vec(2.0, 6.942)), module, Planetz::RST_INPUT));
 
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(16.287, 95.879)), module, Planetz::OUTP1X_OUTPUT));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(28.288, 95.879)), module, Planetz::OUTP1Y_OUTPUT));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(16.287, 110.821)), module, Planetz::OUTP2X_OUTPUT));
 		addOutput(createOutput<PJ301MPort>(mm2px(Vec(28.288, 110.821)), module, Planetz::OUTP2Y_OUTPUT));
+
+		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(19.0, 23.0)), module, Planetz::MIRRORX_LIGHT));
+		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(32.0, 23.0)), module, Planetz::MIRRORY_LIGHT));
 	}
 };
 

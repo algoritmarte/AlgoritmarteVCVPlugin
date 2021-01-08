@@ -424,9 +424,6 @@ struct Zefiro : Module {
         fPulserPulse = ( pulser.ended )? true : false;
         lights[ PULSE_LIGHT ].setSmoothBrightness( fPulserPulse ? 1.f : 0.f, args.sampleTime  );
         
-//        outputs[ TEST_OUTPUT ].setVoltage( tmpsust );
-//        outputs[ TEST2_OUTPUT ].setVoltage( sustmod  );
-
         
         // -------------------- NOISE SECTION
         procNoise( args );
@@ -457,7 +454,8 @@ struct Zefiro : Module {
         
         float freq = freqParam;
         
-        freq += ( freqmod / UNIPEAK ) * 5; // 5 octaves
+        //freq += ( freqmod / UNIPEAK ) * 10; // 5 octaves ?!?
+        freq += freqmod; // 10 octaves (to preserve standard 1V/oct)
         if ( freq > MAXOSCFREQ ) freq = MAXOSCFREQ;
         
         for (int i = 0; i < 3; i++) {
@@ -467,13 +465,15 @@ struct Zefiro : Module {
         int freqwave = (int)clamp( params[ FREQWAVE_PARAM ].getValue() , 0.f, 2.f );
         modulator_output = modosc[ freqwave ].output;
         
+        
         // ---- prepare modulation for OSC1
         freqmodtype = (int)clamp( params[ FREQMODTYPE_PARAM ].getValue() , 0.f, 2.f ); // modulation type        
         float modstrenght = params[ MOD_PARAM ].getValue() / UNIPEAK;
         float modmod = ( params[ MODMOD_PARAM ].getValue() / UNIPEAK ) * inputs[ MODMOD_INPUT ].getVoltage();
         modstrenght += modmod / UNIPEAK; // [0..1]
         
-        if ( outputs[ MOD_OUTPUT ].isConnected() ) {
+        bool modoutconnected = outputs[ MOD_OUTPUT ].isConnected();        
+        if ( modoutconnected ) {
             outputs[ MOD_OUTPUT ].setVoltage( modulator_output * modstrenght );
         }
         
@@ -492,13 +492,12 @@ struct Zefiro : Module {
         float pitchmod = ( params[ PITCHMOD_PARAM ].getValue() / UNIPEAK ) * inputs[ PITCHMOD_INPUT ].getVoltage();
         // ^^^^ should quantize modulation ?!?
         float pol = ( params[ PITCHPOL_PARAM ].getValue() > 0 )? -1.f : 1.f;
-        pitch += pol * ( pitchmod / UNIPEAK ) * 5; // 5 octaves ?!?         
+        //pitch += pol * ( pitchmod / UNIPEAK ) * 5; // 5 octaves ?!?         
+        pitch += pol * pitchmod; // 10 octaves (to preserve standard 1V/oct)          
         
         if ( freqmodtype == MODTYPE_FM ) {
             modbuf.process( pitch + modstrenght * modulator_output / 10.0, 3 );
-            //modbuf.process( pitch * ( 1 + modstrenght * modulator_output / 10.0 ), 4 );            
             pitch = modbuf.output;
-            ///pitch += modstrenght * modulator_output ; // modstrenght:[0,1] * modulator_osc:[-5,5 ]         
         }
         
         for (int i = 0; i < 4; i++) {
@@ -522,9 +521,8 @@ struct Zefiro : Module {
         complexosc_output /= buchlavf; 
         
         if ( freqmodtype == MODTYPE_AM ) {
-            modbuf.process( complexosc_output * (1 + modstrenght * modulator_output / 5.0), 4 );
+            modbuf.process( complexosc_output * (1 + modstrenght * modulator_output / 5.0), 3 );
             complexosc_output = modbuf.output;
-            //complexosc_output *= (1 + modstrenght * modulator_output / 5); // + 5V AM modulation
         }        
         
         

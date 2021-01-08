@@ -22,8 +22,9 @@
 #define WTSQR 2
 #define WTSAW 3
 
-#define MAXOSCFREQ 5000
-#define MAXOUTFREQ 5000
+// max C8=4186.01 (VCV max F#8=5919.91)
+#define MAXOSCFREQ 4186.01
+#define MAXOUTFREQ 4186.01
 
 #define DELAYBUFLEN 88200
 

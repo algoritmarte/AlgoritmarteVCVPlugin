@@ -110,30 +110,30 @@ struct Clockkky : Module {
 		configParam(MODE_PARAM, 0.f, 1.f, 0.f, "Mode");
 		configParam(RST_PARAM, 0.f, 1.f, 0.f, "Reset");
 		configParam(RUN_PARAM, 0.f, 1.f, 0.f, "Run");
-		configParam(STEP00_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP01_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP02_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP03_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP04_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP05_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP06_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP07_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP08_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP09_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP10_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP11_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP12_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP13_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP14_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP15_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP16_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP17_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP18_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP19_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP20_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP21_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP22_PARAM, 0.f, 1.f, 0.f, "");
-		configParam(STEP23_PARAM, 0.f, 1.f, 0.f, "");
+		configParam(STEP00_PARAM, 0.f, 1.f, 0.f, "T1 step 1");
+		configParam(STEP01_PARAM, 0.f, 1.f, 0.f, "T1 step 2");
+		configParam(STEP02_PARAM, 0.f, 1.f, 0.f, "T1 step 3");
+		configParam(STEP03_PARAM, 0.f, 1.f, 0.f, "T1 step 4");
+		configParam(STEP04_PARAM, 0.f, 1.f, 0.f, "T1 step 5");
+		configParam(STEP05_PARAM, 0.f, 1.f, 0.f, "T1 step 6");
+		configParam(STEP06_PARAM, 0.f, 1.f, 0.f, "T1 step 7");
+		configParam(STEP07_PARAM, 0.f, 1.f, 0.f, "T1 step 8");
+		configParam(STEP08_PARAM, 0.f, 1.f, 0.f, "T2 step 1");
+		configParam(STEP09_PARAM, 0.f, 1.f, 0.f, "T2 step 2");
+		configParam(STEP10_PARAM, 0.f, 1.f, 0.f, "T2 step 3");
+		configParam(STEP11_PARAM, 0.f, 1.f, 0.f, "T2 step 4");
+		configParam(STEP12_PARAM, 0.f, 1.f, 0.f, "T2 step 5");
+		configParam(STEP13_PARAM, 0.f, 1.f, 0.f, "T2 step 5");
+		configParam(STEP14_PARAM, 0.f, 1.f, 0.f, "T2 step 7");
+		configParam(STEP15_PARAM, 0.f, 1.f, 0.f, "T2 step 8");
+		configParam(STEP16_PARAM, 0.f, 1.f, 0.f, "T3 step 1");
+		configParam(STEP17_PARAM, 0.f, 1.f, 0.f, "T3 step 2");
+		configParam(STEP18_PARAM, 0.f, 1.f, 0.f, "T3 step 3");
+		configParam(STEP19_PARAM, 0.f, 1.f, 0.f, "T3 step 4");
+		configParam(STEP20_PARAM, 0.f, 1.f, 0.f, "T3 step 5");
+		configParam(STEP21_PARAM, 0.f, 1.f, 0.f, "T3 step 6");
+		configParam(STEP22_PARAM, 0.f, 1.f, 0.f, "T3 step 7");
+		configParam(STEP23_PARAM, 0.f, 1.f, 0.f, "T3 step 8");
 		configParam(TRACK1STEPS_PARAM, 0.f, 8.f, 8.f, "Track 1 steps");
 		configParam(TRACK2STEPS_PARAM, 0.f, 8.f, 8.f, "Track 2 steps");
 		configParam(TRACK3STEPS_PARAM, 0.f, 8.f, 8.f, "Track 3 steps");
@@ -183,7 +183,7 @@ struct Clockkky : Module {
         json_object_set_new(rootJ, "steps", stepsJ);
         
         // mode
-        json_object_set_new(rootJ, "mode", json_boolean(mode != 0) );
+        //json_object_set_new(rootJ, "mode", json_boolean(mode != 0) );
         
         // number of steps
         json_t* numstepsJ = json_array();
@@ -215,13 +215,15 @@ struct Clockkky : Module {
             }
         }
         
-        // mode
+        // mode 
+        /*
         json_t* modeJ = json_object_get( rootJ, "mode");
         if ( modeJ ) {
             int n = json_integer_value( modeJ );
             mode = n? 1 : 0;
             params[MODE_PARAM].setValue( mode );
-        } 
+        }
+        */
         
         // number of steps
         json_t* numstepsJ = json_object_get(rootJ, "numsteps");

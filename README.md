@@ -6,6 +6,7 @@ Algoritmarte VCV Rack Modules
 - [MusiFrog](#musifrog) : another musical sequence generator
 - [Zefiro](#zefiro) : full synth inspired by the Buchla Music Easel
 - [HoldMeTight](#holdmetight) : triple sample&hold and quantizer
+- [CyclicCA](#cyclicca) : cyclic cellular automata visualizer and sequencer
 
 Click here for [version history](#history).
 
@@ -241,7 +242,44 @@ When there is no connection on the input a random voltage **between 0V and 1V** 
  
 ![HoldMeTight](thumbHoldMeTight.png)
 
+## <a name="cyclicca"></a>CyclicCA
+
+The *CyclicCA* module is a [Cyclic Cellular Automata](https://en.wikipedia.org/wiki/Cyclic_cellular_automaton) simulator and visualizer. A cyclic cellular automaton (CCA) is defined as an automaton where each cell takes one of N states 0, 1,…, N-1 and a cell in state i changes to state i+1 mod N at the next time step if it has a neighbor that is in state i+1 mod N, otherwise it remains in state i at the next time step. Classically CCA are applied on the 2-dimensional integer lattice with Von Neumann neighborhoods (nearest 4 neighbors): if cell is at coordinate (x,y), the four neighbours are those at coordinates (x+1,y), (x-1,y), (x,y+1), (x,y-1). For further information see [this post](https://www.algoritmarte.com/cyclic-cellular-automata/) on AlgoritmArte site.
+
+In VCV-Rack this module can be used both as a visualization tool in which some parameters can be changed during the performance and as a dual output CV generator that is tightly connected to the current shape of the automata.
+
+In the module you can parameterize many aspects of the CCA:
+
+- **States**: the number of states
+- the neighborhood (**Neighbors**) is used to evolve the cellular automata; the value of the four knobs define the neighbors of the central cell ( C ) according to the following schema:
+
+![Neighbors](doc/cca_neighbors.png) 
+
+The highlighted cells (17,23,25,31) correspond to the Von Neumann neighborhood (and are the default of the module). 
+
+- **Size**: the size of the cells
+- **Speed**: the evolution speed
+
+It is possible to add entropy to the current configuration placing random *blocks* of cells in random state using the **Block input/button**. The size of the random block can be controlled by the **Block knob** and its **Shape** can be changed between diamond and square.
+
+The **Reset input/button** clears the automata and restarts from a random grid.
+
+The **1 Rule input/button** change one of the 4 neighbors randomly.
+
+The **Color sample input/button** can be used to change one of the colors (associated with the cell states). The color is created using the current values of the **Hue/Saturation/Lightness inputs**, or randomly if the corresponding input is not connected. The colors are changed in sequence.
+
+The two **OUT1, OUT2 outputs** are set with the average sum of the states along two vertical lines of the grid (at 1/3 and 2/3 of the width) and are scaled in the range (-2V,2V). They can be used as pseudo-random control voltages.
+ 
+
+
+![CyclicCA](thumbCyclicCA.png)
+
+
 # <a name="history"></a>History
+
+## v1.5.0
+- added the **CyclicCA* module
+- fixed the save mode bug in Clockkky
 
 ## v1.4.0
 - added the *HoldMeTight* module

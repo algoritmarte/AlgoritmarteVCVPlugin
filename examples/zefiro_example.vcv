@@ -94,8 +94,8 @@
     },
     {
       "id": 29,
-      "plugin": "AlgoritmarteWip",
-      "version": "1.0.0",
+      "plugin": "AlgoritmarteArte",
+      "version": "1.3.0",
       "model": "Zefiro",
       "params": [
         {

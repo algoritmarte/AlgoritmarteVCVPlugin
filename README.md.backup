@@ -277,10 +277,6 @@ The two **OUT1, OUT2 outputs** are set with the average sum of the states along 
 
 # <a name="history"></a>History
 
-## v1.5.1
-- Lights Off support for CyclicCA
-- Fixed Zefiro examples
-
 ## v1.5.0
 - added the **CyclicCA* module
 - fixed the save mode bug in Clockkky

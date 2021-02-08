@@ -145,7 +145,7 @@ struct CyclicCA : Module {
         
 };
 
-struct CyclicCADisplay : Widget {
+struct CyclicCADisplay : LightWidget {
     CyclicCA *module;
     
     int img = -1;
@@ -192,7 +192,7 @@ struct CyclicCADisplay : Widget {
         }
     }
 
-    void draw(const DrawArgs &args) override {
+    void drawLight(const DrawArgs &args) override {
         if (module == NULL) {
             // background
             nvgFillColor(args.vg, nvgRGB(0, 0, 0));

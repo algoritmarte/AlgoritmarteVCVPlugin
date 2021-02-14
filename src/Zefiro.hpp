@@ -174,6 +174,56 @@ struct WestWave {
         
     void prepare( int awavetype ) {
         output = 0;
+        //float f;
+        int off;
+        wavetype = awavetype; 
+        switch ( wavetype ) {
+            
+        
+            case WTSIN :               
+                off = WTLEN / 2;
+                for (int i = 0; i < off; i++) {
+                    wt[i] = std::sin(1.0 * i * (2 * M_PI) / WTLEN);
+                    wt[i+off] = 0 - wt[i];
+                };
+                break;
+                
+            case WTTRI : 
+                off = WTLEN / 2;                
+                for (int i = 0; i < off; i++) {
+                    wt[i] = -1 + 2*std::sin(1.0 * i * (0.5 * M_PI) / off );
+                    wt[i+off] = - wt[i];
+                };
+                /*
+                off = WTLEN / 4;                
+                f = off;
+                for (int i = 0; i < off; i++) {
+                    float f2 = 1.0 * i / f;
+                    wt[i] = f2;
+                    wt[i+off] = 1.0 - f2;
+                    wt[i+2*off] =  - f2;
+                    wt[i+3*off] = -1.0 + f2;
+                };
+                 */
+                break;
+                
+            case WTSAW : 
+                off = WTLEN;
+                for (int i = 0; i < off; i++) {
+                    wt[i] = -1 + 2*std::sin(1.0 * i * (0.5 * M_PI) / WTLEN);
+                };
+                break;                
+
+            case WTSQR : 
+                off = WTLEN / 2;
+                for (int i = 0; i < off; i++) {
+                    wt[i] = 1.0;
+                    wt[i+off] = -1.0;
+                };
+                break;                                
+        }     
+/*    
+        output = 0;
         float f;
         int off;
         wavetype = awavetype;
@@ -218,6 +268,7 @@ struct WestWave {
                 };
                 break;                                
         }        
+ */ 
     }
     
     
@@ -227,7 +278,7 @@ struct WestWave {
             output = wt[ (int)(round(wtindex)) ] * wtamp;
             float delta =  deltasec * FWTLEN / ( 1.0 / freq );
             
-            wtindex += delta;
+            wtindex += delta +wavetype;
             if ( wtindex >= WTLEN ) wtindex -= WTLEN;        
     }
     

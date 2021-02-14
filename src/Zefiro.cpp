@@ -691,7 +691,7 @@ struct Zefiro : Module {
         }
         if ( shotnoise ) {
             noiseout = random::uniform() * UNIPEAK;
-            noiseout2 = random::uniform() * UNIPEAK;
+            noiseout2 = random::uniform(); // * UNIPEAK;
         }
         noise_output = random::uniform() * UNIPEAK - UNIPEAK/2;
         outputs[ NOISE_OUTPUT ].setVoltage( noiseout );

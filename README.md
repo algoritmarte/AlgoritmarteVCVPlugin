@@ -7,8 +7,9 @@ Algoritmarte VCV Rack Modules
 - [Zefiro](#zefiro) : full synth inspired by the Buchla Music Easel
 - [HoldMeTight](#holdmetight) : triple sample&hold and quantizer
 - [CyclicCA](#cyclicca) : cyclic cellular automata visualizer and sequencer
+- [MusiMath](#musimath) : music meets math, an "arithmetic driven" sequencer
 
-Click here for [version history](#history).
+Click here for [version history](#history). Some of the modules are in "beta" version, this means that some specifications/parameters could change in the next releases. 
 
 If you find these modules useful, [please support me](https://www.algoritmarte.com/support-algoritmarte/).
 
@@ -174,7 +175,7 @@ The signal of the Pulser is available at the **PULS OUTPUT** (on the left of the
 
 The noise generator can be used to generate random voltages. It can be triggered by: *Keyb*: a key press; *Pulse*: a pulser trigger; *Seq*: a sequencer trigger.
 
-There are two **NOISE OUTPUTS** (each one has a different value).
+There are two **NOISE OUTPUTS** (each one has a different value). The upper one generates random voltages in the range 0V-10V, the lower one generates random voltages in a smaller range 0V-1V
 
 ![zefiro_noise](doc/zefiro_noise.png)
 
@@ -275,11 +276,58 @@ The two **OUT1, OUT2 outputs** are set with the average sum of the states along 
 ![CyclicCA](thumbCyclicCA.png)
 
 
+## <a name="musimath"></a>MusiMath
+
+The MusiMath module is a pseudo-random note generator based on arithmetic progressions; and it is inspired by the algorithm used in the old nice Windows program [MusiNum](https://reglos.de/musinum/) by Lars Kindermann. 
+
+The algorithm is the following:
+
+- the starting value is determined by the **Start** knobs: **Start = RightKnobValue + 64*LeftKnobValue**;
+- there are two addends **AddA** and **AddB** (their values are **AddA,AddB= RightKnobValue + 64*LeftKnobValue**)
+- at each input **Clock** pulse, AddA or AddB is selected according to the probability **Prob** and its value is added to the **current value** (if *Prob=0* then only AddA is selected, if *Prob=1* then only AddB is selected)
+- in order to select the note to be played the **current value** is converted to the base **Base** and the numbers of digits equal to 1 are counted.
+- finally the number of 1s - the "*note index*" - is converted to one of the note selected in the **Scale**
+
+For example suppose that 
+
+    - Start=3, AddA=11, Prob=0, Base=2, Scale=C,D,E,F,G,A,B;
+    - at the first pulse we have:
+    - current value = Start + AddA = 3 + 11 = 14
+    - the binary (base 2) representation of 14 is 1110
+    - there are three 1s in 1110, so note_index = 3
+    - the third note of the scale is E
+    - play E
+
+There are 3 modes available and selectable by the **Mode** knob: 
+
+- mode 1 : a note is played at every clock pulse
+- mode 2 : the note is played only if the value is different form the previous one
+- mode 3 : the note is played only if the value is equal to the previous one
+
+The note pitch value (1V/octave) is set on the **OUT output**. A  zero pulse (high->low->high) is set on the **Gate output** at each note "played" (see mode above).
+ 
+- the **Length** knob can be used to extend the scale on more octaves.
+- the **Offset base** can be used to shift the note_index.
+- the **Mir** switch (Mirror) can be used to "mirror" the scale in order to produce smoother sequences.
+- the **RST** input and switch reset the current value to the starting value.
+
+but .... how to use it?!? As most generative pseudo-random devices, you can forget about what is happening and experiment with different values of start/adda/addb/scale until you find something interesting! :-)
+
+You can also take a look at  the patch musimath_example.vcv in the examples folder.
+
+
+
+![MusiMath](thumbMusiMath.png)
+
+
 # <a name="history"></a>History
 
+## v1.6.0
+- added the *MusiMath* module
+- Zefiro: refined the shapes of the oscillators, the second noise output now generates random voltages in a smaller range: 0V-1V
+
 ## v1.5.1
-- Lights Off support for CyclicCA
-- Fixed Zefiro examples
+- Modular Fungi Lights Off support for CyclicCA
 
 ## v1.5.0
 - added the **CyclicCA* module

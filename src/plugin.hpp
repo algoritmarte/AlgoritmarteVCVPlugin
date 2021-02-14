@@ -14,3 +14,4 @@ extern Model* modelMusiFrog;
 extern Model* modelZefiro;
 extern Model* modelHoldMeTight;
 extern Model* modelCyclicCA;
+extern Model* modelMusiMath;

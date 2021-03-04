@@ -307,7 +307,7 @@ There are 3 modes available and selectable by the **Mode** knob:
 The note pitch value (1V/octave) is set on the **OUT output**. A  zero pulse (high->low->high) is set on the **Gate output** at each note "played" (see mode above).
  
 - the **Length** knob can be used to extend the scale on more octaves.
-- the **Offset base** can be used to shift the note_index.
+- the **Offset** can be used to shift the output note: if its value is N and the switch **REL** is off, then N semitones are added to the output note; if REL is on (offset relative to the scale mode) then the N-th value of the scale is added to the output note. The offset can be modulated using the corresponding input (which is supposed to represent a value in 1V/oct). 
 - the **Mir** switch (Mirror) can be used to "mirror" the scale in order to produce smoother sequences.
 - the **RST** input and switch reset the current value to the starting value.
 
@@ -321,6 +321,11 @@ You can also take a look at  the patch musimath_example.vcv in the examples fold
 
 
 # <a name="history"></a>History
+
+## v1.6.1
+- MusiMath: fixed the offset calculation and added the REL switch, fixed a bug in scale editing
+- Clockkky: fixed a bug that sometimes occurred at startup
+- Zefiro: changed the scale factor of the modulator signal feeded to the main oscillator
 
 ## v1.6.0
 - added the *MusiMath* module

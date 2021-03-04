@@ -6,7 +6,7 @@
 #define MINMODE 1.f
 #define MAXMODE 3.f
 
-#define MINOFFSET 0.f
+#define MINOFFSET -24.f
 #define MAXOFFSET 24.f
 #define DEFOFFSET 0.f
 
@@ -18,6 +18,8 @@
 #define MAXLEN 24.f
 #define DEFLEN 8.f
 
+// MAXLEN * 2
+#define MAXSCALELEN 48
 
 #define NODBG
 
@@ -48,6 +50,7 @@ struct MusiMath : Module {
 		STEP09_PARAM,
 		STEP10_PARAM,
 		STEP11_PARAM,
+		Z1REL_PARAM,
 		NUM_PARAMS
 	};
 	enum InputIds {
@@ -79,12 +82,13 @@ struct MusiMath : Module {
 		LEDSTEP10_LIGHT,
 		LEDSTEP11_LIGHT,
 		RST_LIGHT,
+		Z1REL_LIGHT,
 		NUM_LIGHTS
 	};
 
 	MusiMath() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
-		configParam(ADDA0_PARAM, 0.f, 63.f, 0.f, "Add A Low nibble");
+		configParam(ADDA0_PARAM, 0.f, 63.f, 5.f, "Add A Low nibble");
 		configParam(ADDA1_PARAM, 0.f, 63.f, 0.f, "Add A High nibble");
 		configParam(ADDB0_PARAM, 0.f, 63.f, 0.f, "Add B Low nibble");
 		configParam(ADDB1_PARAM, 0.f, 63.f, 0.f, "Add B High nibble");
@@ -92,10 +96,10 @@ struct MusiMath : Module {
 		configParam(FMIRROR_PARAM, 0.f, 1.f, 0.f, "Mirror scale");
 		configParam(LEN_PARAM, MINLEN, MAXLEN, DEFLEN, "Scale length");
 		configParam(MODE_PARAM, MINMODE, MAXMODE, 1.f, "Mode");
-		configParam(OFFSET_PARAM, MINOFFSET, MAXOFFSET, DEFOFFSET, "Offset");
+		configParam(OFFSET_PARAM, MINOFFSET, MAXOFFSET, DEFOFFSET, "Offset (1V/oct)");
 		configParam(PROB_PARAM, 0.f, 1.f, 0.f, "Probability");
 		configParam(RST_PARAM, 0.f, 1.f, 0.f, "Reset");
-		configParam(START0_PARAM, 0.f, 63.f, 0.f, "Start Low nibble");
+		configParam(START0_PARAM, 0.f, 63.f, 8.f, "Start Low nibble");
 		configParam(START1_PARAM, 0.f, 63.f, 0.f, "Start High nibble");
 		configParam(STEP00_PARAM, 0.f, 1.f, 0.f, "C");
 		configParam(STEP01_PARAM, 0.f, 1.f, 0.f, "C#");
@@ -109,7 +113,7 @@ struct MusiMath : Module {
 		configParam(STEP09_PARAM, 0.f, 1.f, 0.f, "A");
 		configParam(STEP10_PARAM, 0.f, 1.f, 0.f, "A#");
 		configParam(STEP11_PARAM, 0.f, 1.f, 0.f, "B");
-                
+		configParam(Z1REL_PARAM, 0.f, 1.f, 0.f, "Offset relative to scale");
                 bitscale[0] = true;
                 bitscale[2] = true;
                 bitscale[4] = true;
@@ -124,20 +128,22 @@ struct MusiMath : Module {
         dsp::SchmittTrigger clockTrigger;
         dsp::SchmittTrigger resetTrigger;
         dsp::SchmittTrigger scaleTrigger[NUMNOTES];
+        dsp::SchmittTrigger relTrigger;
         
         dsp::PulseGenerator outpulse;
         
         bool bitscale[NUMNOTES] = {};
 
         
-        int scalemap[ NUMNOTES ];
+        int scalemap[ MAXSCALELEN ] = {};
         
         int scalelen = 7;
+        int numleds = 7;
         
         int offset = 0;
         int bufoffset = 0;
         int curr = 0;
-        int oldnote = -1;
+        int oldnote = -99;
         int start = 0;
         int adda = 0;
         int addb = 0;
@@ -145,21 +151,45 @@ struct MusiMath : Module {
         float prob = 0;
         int base = 2;
         int len = 8;
+        bool rel = false;
         
 	void process(const ProcessArgs& args) override {
             
+            // rel mode (offset is relative to the scale)
+            if ( relTrigger.process(params[Z1REL_PARAM].getValue() ) ) {
+                rel = !rel;
+            } 
+            
+            lights[ Z1REL_LIGHT ].setBrightness( rel? 1.0f : 0.f );            
+            len = (int)(clamp( params[ LEN_PARAM ].getValue(), MINLEN, MAXLEN  ));
+            bool fmirr = params[ FMIRROR_PARAM ].getValue() > 0;
             
             int z = 0;
+            int z2 = 0;
             for (int i = 0; i < NUMNOTES; i++) {
                 if ( scaleTrigger[i].process( params[STEP00_PARAM+i].getValue()) ) {
-                    if ( scalelen > 1) {
+                    if ( numleds > 1 || ! bitscale[i] ) {
                         bitscale[i] = ! bitscale[i]; 
                     }
                 }
-                if ( bitscale[i] ) scalemap[ z++ ] = i;
+                if ( bitscale[i] && z < len ) scalemap[ z++ ] = i;
+                if ( bitscale[i] ) z2++;
                 lights[ LEDSTEP00_LIGHT + i ].setBrightness( bitscale[i]? 1.0f : 0.f );     
             }
             scalelen = z;
+            numleds = z2;
+            
+            int p = 0;
+            while ( scalelen < len ) { // ad dmore octaves
+                scalemap[ scalelen++ ] = scalemap[ p++ ] + 12;                
+            }
+            int extraocts = (int)( ceil ( 1.f * scalelen  / z) );
+            if ( fmirr ) {
+                p = scalelen - 2;
+                while ( p > 0 ) {
+                    scalemap[ scalelen++ ] = scalemap[ p-- ]; 
+                }
+            }
             
             int newstart = (int)(params[ START0_PARAM ].getValue() + 64 * params[ START1_PARAM ].getValue());
             int adda = (int)(params[ ADDA0_PARAM ].getValue() + 64 * params[ ADDA1_PARAM ].getValue());
@@ -173,12 +203,9 @@ struct MusiMath : Module {
                     
             mode = (int)(clamp( params[ MODE_PARAM ].getValue(), MINMODE, MAXMODE  ));
             base = (int)(clamp( params[ BASE_PARAM ].getValue(), MINBASE, MAXBASE  ));
-            len = (int)(clamp( params[ LEN_PARAM ].getValue(), MINLEN, MAXLEN  ));
             
-           
-            bufoffset = (int)(clamp( params[ OFFSET_PARAM ].getValue() + inputs[ OFFSET_INPUT ].getVoltage(), MINOFFSET, MAXOFFSET  ));
-            
-            bool fmirr = params[ FMIRROR_PARAM ].getValue() > 0;
+            float offin =  inputs[ OFFSET_INPUT ].getVoltage() * 12.0f;
+            bufoffset = (int)(clamp( params[ OFFSET_PARAM ].getValue() + offin , MINOFFSET, MAXOFFSET  ));
             
             bool fplay = false;
             if ( clockTrigger.process(inputs[ CLOCK_INPUT ].getVoltage()) ) {
@@ -195,8 +222,12 @@ struct MusiMath : Module {
             
             // Reset
             if (resetTrigger.process(params[RST_PARAM].getValue() + inputs[RST_INPUT].getVoltage())) {
-                oldnote = -1;
+                oldnote = -99;
+#ifdef SHOWDBG                
+                dbg();
+#endif                
                 curr = start;
+                
             }  
             
             int v = 0;
@@ -208,26 +239,27 @@ struct MusiMath : Module {
                     if ( (c % base) == 1 ) v++;   
                     c /= base;
                 }
-            }
+            }            
             
-            v += offset;
-            if ( v < 0 ) v = 0;
-            
-            if ( fmirr && len > 2 ) {
-                int x = len + (len - 2);
-                v = v % x;
-                if ( v >= len ) {
-                    v = len  - (v - len) - 2;
+            int offtmp = offset;
+            int offoct = 0;
+            if ( rel ) {
+                while (offtmp < 0) {
+                    offtmp += scalelen;
+                    offoct -= extraocts;
                 }
+                v += offtmp;                
             }
-            
-            if ( scalelen < 1 ) scalelen = 1;
-            
-            int inote = v % len;
-            int ioct = inote / scalelen;
+            if ( v < 0 ) v = 0;
+             
+            int inote = v;
             inote = inote % scalelen;
             
-            int note = scalemap[ inote ] + 12 * ioct;
+            int note = scalemap[ inote ] + offoct * 12;
+            
+            if ( ! rel ) {
+                note += offset;                
+            }            
             
             bool ftrig = true;
             if ( mode == 2 ) {
@@ -239,23 +271,33 @@ struct MusiMath : Module {
             if ( fplay && ftrig ) {
                 outpulse.trigger(1e-3f);
             }
-            oldnote = note;                
+            if ( fplay ) oldnote = note;                
           
                       
             //outputs[ GATE_OUTPUT ].setVoltage( 1.0 * offset / 10.0 );            
             //outputs[ GATE_OUTPUT ].setVoltage( inputs[ OFFSET_INPUT ].getVoltage() / 10.f );
 #ifdef SHOWDBG             
-            outputs[ DBG_OUTPUT ].setVoltage( 1.0 * curr / 10.0 );
+            //outputs[ DBG_OUTPUT ].setVoltage( inote );
+            outputs[ DBG_OUTPUT ].setVoltage( offoct  );
+            outputs[ GATE_OUTPUT ].setVoltage( 1.0 * inote );
+            outputs[ MAIN_OUTPUT ].setVoltage( 1.0 * note );
 #endif            
-            outputs[ MAIN_OUTPUT ].setVoltage( 1.0 * note / 12.0 );
-            
+
+            float out = clamp( 1.0 * note / 12.0 , -5.f, 5.f );
+            outputs[ MAIN_OUTPUT ].setVoltage( out );
             outputs[ GATE_OUTPUT ].setVoltage( outpulse.process(args.sampleTime) ? 0.0f : 10.f);
             
-            lights[ RST_LIGHT ].setSmoothBrightness(resetTrigger.isHigh(), args.sampleTime);
-            
+            lights[ RST_LIGHT ].setSmoothBrightness(resetTrigger.isHigh(), args.sampleTime);            
 	}
         
-        
+    void dbg() {
+        std::string inf;
+        for (int i = 0; i < scalelen; i++) {
+            inf = inf + std::to_string( scalemap[i] ) + " ";
+        }
+        const char *s = inf.c_str();
+        INFO ( "scalelen=%d start=%d curr=%d (%s)", scalelen, start, curr, s );        
+    }        
 
     /**
      * Save data
@@ -264,6 +306,9 @@ struct MusiMath : Module {
     json_t* dataToJson() override {
         json_t* rootJ = json_object();
 
+        // rel
+        json_object_set_new( rootJ, "rel", json_boolean(rel) );        
+        
         // notes
         json_t* notesJ = json_array();
         for (int i = 0; i < NUMNOTES; i++) {
@@ -278,6 +323,11 @@ struct MusiMath : Module {
      * @param rootJ
      */
     void dataFromJson(json_t* rootJ) override {
+        
+        json_t* relJ = json_object_get(rootJ, "rel");
+        if (relJ)
+            rel = json_is_true(relJ);        
+        
         // notes
         json_t* notesJ = json_object_get(rootJ, "notes");
         if (notesJ) {
@@ -333,6 +383,7 @@ struct MusiMathWidget : ModuleWidget {
 		addParam(createParamCentered<LEDButton>(mm2px(Vec(10.0, 20.0)), module, MusiMath::STEP09_PARAM));
 		addParam(createParamCentered<LEDButton>(mm2px(Vec(5.0, 15.0)), module, MusiMath::STEP10_PARAM));
 		addParam(createParamCentered<LEDButton>(mm2px(Vec(10.0, 10.0)), module, MusiMath::STEP11_PARAM));
+		addParam(createParamCentered<LEDButton>(mm2px(Vec(14.0, 91.0)), module, MusiMath::Z1REL_PARAM));
 
 		addInput(createInput<PJ301MPort>(mm2px(Vec(1.0, 81.0)), module, MusiMath::CLOCK_INPUT));
 		addInput(createInput<PJ301MPort>(mm2px(Vec(17.0, 92.0)), module, MusiMath::OFFSET_INPUT));
@@ -357,6 +408,7 @@ struct MusiMathWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(5.0, 15.0)), module, MusiMath::LEDSTEP10_LIGHT));
 		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(10.0, 10.0)), module, MusiMath::LEDSTEP11_LIGHT));
 		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(5.0, 105.0)), module, MusiMath::RST_LIGHT));
+		addChild(createLightCentered<MediumLight<GreenLight>>(mm2px(Vec(14.0, 91.0)), module, MusiMath::Z1REL_LIGHT));
 	}
 };
 

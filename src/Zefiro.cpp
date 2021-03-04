@@ -496,7 +496,7 @@ struct Zefiro : Module {
         pitch += pol * pitchmod; // 10 octaves (to preserve standard 1V/oct)          
         
         if ( freqmodtype == MODTYPE_FM ) {
-            modbuf.process( pitch + modstrenght * modulator_output / 10.0, 3 );
+            modbuf.process( pitch + modstrenght * modulator_output, 3 );
             pitch = modbuf.output;
         }
         
@@ -508,8 +508,11 @@ struct Zefiro : Module {
         int timbrewave = (int)clamp( params[ TIMBREWAVE_PARAM ].getValue() , 0.f, 2.f );
         float timbremix = params[ TIMBREMIX_PARAM ].getValue();
         osc_output = (1 - timbremix) * osc[0].output + timbremix * osc[timbrewave + 1].output; 
-        
-        
+
+#ifdef USETEST        
+        outputs[ TEST_OUTPUT ].setVoltage( pitch );
+        outputs[ TEST2_OUTPUT ].setVoltage( osc[0].freq  );
+#endif        
         // -------------------- WAVEFOLDING
         float timbreParam = params[TIMBRE_PARAM].getValue();
         float timbremod = ( params[TIMBREMOD_PARAM].getValue() / UNIPEAK ) * inputs[ TIMBREMOD_INPUT ].getVoltage();

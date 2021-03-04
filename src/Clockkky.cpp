@@ -101,8 +101,8 @@ struct Clockkky : Module {
 	
 	bool steps[ 24 ] = {};
         
-        int numSteps[ 3 ];
-        int index[ 3 ];
+        int numSteps[ 3 ] = {};
+        int index[ 3 ] = {};
         
 	Clockkky() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);

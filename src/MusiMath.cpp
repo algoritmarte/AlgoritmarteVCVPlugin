@@ -114,6 +114,7 @@ struct MusiMath : Module {
 		configParam(STEP10_PARAM, 0.f, 1.f, 0.f, "A#");
 		configParam(STEP11_PARAM, 0.f, 1.f, 0.f, "B");
 		configParam(Z1REL_PARAM, 0.f, 1.f, 0.f, "Offset relative to scale");
+                
                 bitscale[0] = true;
                 bitscale[2] = true;
                 bitscale[4] = true;
@@ -121,9 +122,7 @@ struct MusiMath : Module {
                 bitscale[7] = true;
                 bitscale[9] = true;
                 bitscale[11] = true;
-                              
 	}
-        
         
         dsp::SchmittTrigger clockTrigger;
         dsp::SchmittTrigger resetTrigger;
@@ -183,7 +182,7 @@ struct MusiMath : Module {
             while ( scalelen < len ) { // ad dmore octaves
                 scalemap[ scalelen++ ] = scalemap[ p++ ] + 12;                
             }
-            int extraocts = (int)( ceil ( 1.f * scalelen  / z) );
+            
             if ( fmirr ) {
                 p = scalelen - 2;
                 while ( p > 0 ) {
@@ -221,45 +220,53 @@ struct MusiMath : Module {
             if ( startchanged ) curr = start;
             
             // Reset
-            if (resetTrigger.process(params[RST_PARAM].getValue() + inputs[RST_INPUT].getVoltage())) {
+            if ( resetTrigger.process(params[RST_PARAM].getValue() + inputs[RST_INPUT].getVoltage())  ) {
                 oldnote = -99;
 #ifdef SHOWDBG                
                 dbg();
 #endif                
                 curr = start;
-                
+                offset = bufoffset;                
             }  
-            
+
+            int pcurr = (curr >= 0)? curr : -curr;
             int v = 0;
             if ( base == 1) {
-                v = curr;                
+                v = pcurr;                
             } else {
-                int c = curr;
+                int c = pcurr;
                 while ( c != 0 ) {
                     if ( (c % base) == 1 ) v++;   
                     c /= base;
                 }
             }            
-            
+
             int offtmp = offset;
-            int offoct = 0;
-            if ( rel ) {
-                while (offtmp < 0) {
-                    offtmp += scalelen;
-                    offoct -= extraocts;
-                }
-                v += offtmp;                
-            }
+            
             if ( v < 0 ) v = 0;
-             
             int inote = v;
-            inote = inote % scalelen;
+            inote = inote % scalelen;            
+            int note = scalemap[ inote ];
             
-            int note = scalemap[ inote ] + offoct * 12;
-            
-            if ( ! rel ) {
+            if ( rel ) {
+                int k = note % NUMNOTES;
+                if ( offtmp > 0 ) {
+                    while ( offtmp > 0 && k < 256 ) {
+                        k++;
+                        note++;
+                        if ( bitscale[ k % NUMNOTES ] ) offtmp--;
+                    }
+                } else {
+                    while ( offtmp < 0 && k > -256 ) {
+                        k--;
+                        if ( k < 0 ) k += NUMNOTES;
+                        note--;
+                        if ( bitscale[ k % NUMNOTES ] ) offtmp++;
+                    }
+                }
+            } else {
                 note += offset;                
-            }            
+            }
             
             bool ftrig = true;
             if ( mode == 2 ) {
@@ -278,9 +285,9 @@ struct MusiMath : Module {
             //outputs[ GATE_OUTPUT ].setVoltage( inputs[ OFFSET_INPUT ].getVoltage() / 10.f );
 #ifdef SHOWDBG             
             //outputs[ DBG_OUTPUT ].setVoltage( inote );
-            outputs[ DBG_OUTPUT ].setVoltage( offoct  );
-            outputs[ GATE_OUTPUT ].setVoltage( 1.0 * inote );
-            outputs[ MAIN_OUTPUT ].setVoltage( 1.0 * note );
+            outputs[ DBG_OUTPUT ].setVoltage( v  );
+            //outputs[ GATE_OUTPUT ].setVoltage( 1.0 * inote );
+            //outputs[ MAIN_OUTPUT ].setVoltage( 1.0 * note );
 #endif            
 
             float out = clamp( 1.0 * note / 12.0 , -5.f, 5.f );

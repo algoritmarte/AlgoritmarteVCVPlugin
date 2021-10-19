@@ -145,10 +145,10 @@ typedef struct WestADSR WestADSR_t;
  */       
 struct LEDSliderGreenLong : app::SvgSlider {
 	LEDSliderGreenLong() {
-		maxHandlePos = app::mm2px(math::Vec(0.738, 0.738).plus(math::Vec(2, 0)));
-		minHandlePos = app::mm2px(math::Vec(0.738, 22.078 * 1.6).plus(math::Vec(2, 0)));
+		maxHandlePos = rack::window::mm2px(math::Vec(0.738, 0.738).plus(math::Vec(2, 0)));
+		minHandlePos = rack::window::mm2px(math::Vec(0.738, 22.078 * 1.6).plus(math::Vec(2, 0)));
 		setBackgroundSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/LEDSliderLong.svg")));            
-		setHandleSvg(APP->window->loadSvg(asset::system("res/ComponentLibrary/LEDSliderGreenHandle.svg")));
+		setHandleSvg(APP->window->loadSvg(asset::plugin(pluginInstance,"res/LEDSliderGreenHandle.svg")));
 	}
 };
 

@@ -145,7 +145,7 @@ struct CyclicCA : Module {
         
 };
 
-struct CyclicCADisplay : LightWidget {
+struct CyclicCADisplay : Widget {
     CyclicCA *module;
     
     int img = -1;
@@ -192,7 +192,7 @@ struct CyclicCADisplay : LightWidget {
         }
     }
 
-    void drawLight(const DrawArgs &args) override {
+    void draw(const DrawArgs &args) override {
         if (module == NULL) {
             // background
             nvgFillColor(args.vg, nvgRGB(0, 0, 0));
@@ -218,13 +218,11 @@ struct CyclicCADisplay : LightWidget {
                 module->cca.evolveCA();
             }
         }
-        
-        
+                
         pimg = (unsigned char*)(& imgbuf);
         if ( img == -1 ) {
             updateBuf();
             img = nvgCreateImageRGBA(vg, DISPLAY_WIDTH, DISPLAY_HEIGHT, 0, pimg );
-
         } else {
             if ( rendernew ) {
                 updateBuf();
